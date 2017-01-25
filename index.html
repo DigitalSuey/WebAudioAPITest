@@ -1,0 +1,89 @@
+<html>
+  <body>
+    <div id="ytPlayer"></div>
+    <br><br><br>
+    <button type="button" onclick="javascript:playSound(0)">Play</button>
+    <script type="text/javascript">
+      // 2. This code loads the IFrame Player API code asynchronously.
+      var tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      // 3. This function creates an <iframe> (and YouTube player)
+      //    after the API code downloads.
+      var player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('ytPlayer', {
+          height: '390',
+          width: '640',
+          videoId: 'gs415cKPASA',
+          events: {
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+
+      // 5. The API calls this function when the player's state changes.
+      //    The function indicates that when playing a video (state=1),
+      //    the player should play for six seconds and then stop.
+      function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.ENDED && !done) {
+          console.log('onPlayerStateChange ENDED');
+          playSound()
+        }
+      }
+
+
+      var playList = [
+        { pause: 0,    uri: 'next-up.mp3' },
+        { pause: 2000, uri: 'three-beeps.mp3' },
+        { pause: 5000, uri: 'congratulations.mp3' }
+      ]
+
+      try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        loadAudio();
+      } catch(e) {
+        alert("Your browser doesn't support Web Audio API");
+      }
+
+      function loadAudio() {
+        var context = new AudioContext();
+
+        playList = playList.map(function(item) {
+          var request = new XMLHttpRequest();
+
+          request.responseType = 'arraybuffer';
+          request.open('GET', item.uri, true);
+          request.send();
+
+          request.onload = function() {
+            context.decodeAudioData(request.response, function(buffer) {
+              item.audio = context.createBufferSource();
+              item.audio.buffer = buffer;
+              item.audio.connect(context.destination);
+            });
+          };
+
+          return item;
+        });
+      }
+
+      function playSound(index) {
+        var item = playList[index];
+
+        if (item === undefined) {
+          return;
+        }
+
+        setTimeout(function() {
+          item.audio.start(0);
+          item.audio.onended = function() {
+            playSound(index + 1);
+          }
+        }, item.pause || 0);
+      }
+    </script>
+  </body>
+</html>
